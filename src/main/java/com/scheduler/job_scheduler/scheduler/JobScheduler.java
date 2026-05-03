@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 public class JobScheduler {
     private final JobRepository jobRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     // Thread pool for parallel execution
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
@@ -34,7 +36,16 @@ public class JobScheduler {
             job.setStatus(JobStatus.SCHEDULED);
             jobRepository.save(job);
 
-            executor.submit(() -> executeJob(job));
+            try {
+                restTemplate.postForObject(
+                        "http://localhost:8080/worker/execute",
+                        job,
+                        String.class
+                );
+            } catch (Exception e) {
+                job.setStatus(JobStatus.FAILED);
+                jobRepository.save(job);
+            }
         }
     }
 
