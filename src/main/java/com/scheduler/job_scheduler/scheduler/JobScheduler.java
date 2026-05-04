@@ -3,6 +3,7 @@ package com.scheduler.job_scheduler.scheduler;
 import com.scheduler.job_scheduler.model.Job;
 import com.scheduler.job_scheduler.model.JobStatus;
 import com.scheduler.job_scheduler.repository.JobRepository;
+import com.scheduler.job_scheduler.service.WorkerRegistry;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,8 @@ import java.util.concurrent.Executors;
 public class JobScheduler {
     private final JobRepository jobRepository;
     private final RestTemplate restTemplate = new RestTemplate();
+
+    private final WorkerRegistry workerRegistry;
 
     // Thread pool for parallel execution
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
@@ -37,8 +40,10 @@ public class JobScheduler {
             jobRepository.save(job);
 
             try {
+                String workerUrl = workerRegistry.getNextWorker();
+
                 restTemplate.postForObject(
-                        "http://localhost:8080/worker/execute",
+                        workerUrl + "/execute",
                         job,
                         String.class
                 );
