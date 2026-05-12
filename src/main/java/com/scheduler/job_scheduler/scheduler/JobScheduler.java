@@ -3,6 +3,7 @@ package com.scheduler.job_scheduler.scheduler;
 import com.scheduler.job_scheduler.model.Job;
 import com.scheduler.job_scheduler.model.JobStatus;
 import com.scheduler.job_scheduler.repository.JobRepository;
+import com.scheduler.job_scheduler.service.LeaderElectionService;
 import com.scheduler.job_scheduler.service.WorkerRegistry;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +24,18 @@ public class JobScheduler {
 
     private final WorkerRegistry workerRegistry;
 
+    private final LeaderElectionService leaderElectionService;
+
     // Thread pool for parallel execution
     private final ExecutorService executor = Executors.newFixedThreadPool(5);
 
     @Scheduled(fixedDelay = 5000)
     @Transactional
     public void scheduleJob() {
+        if(!leaderElectionService.isLeader()) {
+            return;
+        }
+        
         List<Job> jobs = jobRepository.findByStatusAndScheduleTimeBefore(
                 JobStatus.CREATED,
                 LocalDateTime.now()
