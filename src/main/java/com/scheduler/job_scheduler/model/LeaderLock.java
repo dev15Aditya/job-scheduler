@@ -6,6 +6,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "scheduler_lock")
 @Getter
@@ -16,4 +18,6 @@ public class LeaderLock {
     private String lockName;
 
     private String lockedBy;
+
+    private LocalDateTime heartbeatTime;
 }
